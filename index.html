@@ -365,41 +365,48 @@ function telechargerSignatureHTML() {
 }
 
 function telechargerSignaturePNG() {
-    // Assurer que les polices sont chargées
+    // Assurer que les polices sont chargées avant la capture
     document.fonts.ready.then(function () {
-        // Créer une copie du conteneur de la signature avec des dimensions fixes
+        // Récupérer l'élément original de la signature
         var signatureElement = document.getElementById('signature');
         
-        // Cloner l'élément pour éviter de modifier l'original
-        var clonedSignature = cloneWithStyles(signatureElement);
-        
-        // Appliquer des styles fixes pour le rendu
-        clonedSignature.style.width = '650px';
-        clonedSignature.style.height = 'auto'; // Laisser la hauteur s'ajuster automatiquement
+        // Cloner l'élément pour éviter toute modification de l'original
+        var clonedSignature = signatureElement.cloneNode(true);
+
+        // Appliquer des styles fixes pour le rendu, tout en conservant la taille d'origine
+        clonedSignature.style.width = signatureElement.offsetWidth + 'px';
+        clonedSignature.style.height = signatureElement.offsetHeight + 'px';
         clonedSignature.style.boxSizing = 'border-box';
-        
+
+        // Ajouter un facteur de transformation temporaire pour éviter l'agrandissement visible
+        clonedSignature.style.transform = 'scale(0.33)';
+        clonedSignature.style.transformOrigin = 'top left';
+
         // Créer un conteneur temporaire pour le canvas caché
         var tempContainer = document.createElement('div');
         tempContainer.style.position = 'absolute';
         tempContainer.style.left = '-9999px'; // Positionner hors de la vue
         tempContainer.appendChild(clonedSignature);
         document.body.appendChild(tempContainer);
-        
-        // Utiliser html2canvas sur l'élément cloné
+
+        // Utiliser html2canvas pour capturer l'image avec une échelle élevée
         html2canvas(clonedSignature, { 
-            scale: 1, // Facteur d'échelle pour une meilleure netteté
-            backgroundColor: '#ffffff', // Fond blanc pour l'image
-            useCORS: true // Permet de charger des images externes
+            scale: 3,  // Augmenter la résolution sans modifier les dimensions visibles
+            backgroundColor: '#ffffff',  // Fond blanc pour un rendu propre
+            useCORS: true  // Autoriser le chargement des images externes
         }).then(function(canvas) { 
-            // Générer le PNG à partir du canvas
+            // Réinitialiser la transformation après capture
+            clonedSignature.style.transform = '';
+
+            // Générer le lien de téléchargement du PNG
             var link = document.createElement('a');
             link.href = canvas.toDataURL('image/png');
-            
+
             // Générer le nom de fichier basé sur les champs prénom et nom
             var prenom = document.getElementById('prenom').value.trim();
             var nom = document.getElementById('nom').value.trim();
             link.download = 'signature_' + prenom + '_' + nom + '.png';
-            
+
             // Télécharger le fichier
             document.body.appendChild(link);
             link.click();
@@ -416,6 +423,7 @@ function telechargerSignaturePNG() {
         alert('Les polices n\'ont pas pu être chargées correctement.');
     });
 }
+
 
 // Fonction pour cloner l'élément avec ses styles computed
 function cloneWithStyles(element) {
